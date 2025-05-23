@@ -1,0 +1,344 @@
+{
+  "messages": [
+    {
+      "id": 1747996984662,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:43:04.662Z"
+    },
+    {
+      "id": 1747997005653,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:43:25.653Z"
+    },
+    {
+      "id": 1747997011546,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:43:31.546Z"
+    },
+    {
+      "id": 1747997011596,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:43:31.596Z"
+    },
+    {
+      "id": 1747997013622,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:43:33.622Z"
+    },
+    {
+      "id": 1747997013666,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:43:33.666Z"
+    },
+    {
+      "id": 1747997026183,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:43:46.183Z"
+    },
+    {
+      "id": 1747997026225,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:43:46.225Z"
+    },
+    {
+      "id": 1747997036141,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:43:56.141Z"
+    },
+    {
+      "id": 1747997036254,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:43:56.254Z"
+    },
+    {
+      "id": 1747997048609,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T10:44:08.609Z"
+    },
+    {
+      "id": 1747997048811,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:44:08.811Z"
+    },
+    {
+      "id": 1747997052101,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:44:12.101Z"
+    },
+    {
+      "id": 1747997052257,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:44:12.257Z"
+    },
+    {
+      "id": 1747997055775,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:44:15.775Z"
+    },
+    {
+      "id": 1747997055893,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:44:15.893Z"
+    },
+    {
+      "id": 1747997076272,
+      "type": "system",
+      "content": "test 加入了聊天室",
+      "timestamp": "2025-05-23T10:44:36.272Z"
+    },
+    {
+      "id": 1747997080501,
+      "type": "system",
+      "content": "test 离开了聊天室",
+      "timestamp": "2025-05-23T10:44:40.501Z"
+    },
+    {
+      "id": 1747997080546,
+      "type": "system",
+      "content": "test 加入了聊天室",
+      "timestamp": "2025-05-23T10:44:40.546Z"
+    },
+    {
+      "id": 1747997086028,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:44:46.028Z"
+    },
+    {
+      "id": 1747997086162,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:44:46.162Z"
+    },
+    {
+      "id": 1747997088759,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:44:48.759Z"
+    },
+    {
+      "id": 1747997088876,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:44:48.876Z"
+    },
+    {
+      "id": 1747997091786,
+      "type": "system",
+      "content": "test 离开了聊天室",
+      "timestamp": "2025-05-23T10:44:51.786Z"
+    },
+    {
+      "id": 1747997091825,
+      "type": "system",
+      "content": "test 加入了聊天室",
+      "timestamp": "2025-05-23T10:44:51.825Z"
+    },
+    {
+      "id": 1747997164769,
+      "type": "system",
+      "content": "test 离开了聊天室",
+      "timestamp": "2025-05-23T10:46:04.769Z"
+    },
+    {
+      "id": 1747997164784,
+      "type": "system",
+      "content": "test 加入了聊天室",
+      "timestamp": "2025-05-23T10:46:04.784Z"
+    },
+    {
+      "id": 1747997164807,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:46:04.807Z"
+    },
+    {
+      "id": 1747997164829,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T10:46:04.829Z"
+    },
+    {
+      "id": 1747997164864,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:46:04.864Z"
+    },
+    {
+      "id": 1747997164877,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:46:04.877Z"
+    },
+    {
+      "id": 1747997268098,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:47:48.098Z"
+    },
+    {
+      "id": 1747997268217,
+      "type": "system",
+      "content": "test 加入了聊天室",
+      "timestamp": "2025-05-23T10:47:48.217Z"
+    },
+    {
+      "id": 1747997268572,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:47:48.572Z"
+    },
+    {
+      "id": 1747997279049,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:47:59.049Z"
+    },
+    {
+      "id": 1747997279153,
+      "type": "system",
+      "content": "hello 加入了聊天室",
+      "timestamp": "2025-05-23T10:47:59.153Z"
+    },
+    {
+      "id": 1747997296030,
+      "type": "system",
+      "content": "hello 离开了聊天室",
+      "timestamp": "2025-05-23T10:48:16.030Z"
+    },
+    {
+      "id": 1747997305380,
+      "type": "system",
+      "content": "test 加入了聊天室",
+      "timestamp": "2025-05-23T10:48:25.380Z"
+    },
+    {
+      "id": 1747997305645,
+      "type": "system",
+      "content": "test 离开了聊天室",
+      "timestamp": "2025-05-23T10:48:25.645Z"
+    },
+    {
+      "id": 1747997305660,
+      "type": "system",
+      "content": "test 加入了聊天室",
+      "timestamp": "2025-05-23T10:48:25.660Z"
+    },
+    {
+      "id": 1747997308056,
+      "type": "system",
+      "content": "test 离开了聊天室",
+      "timestamp": "2025-05-23T10:48:28.056Z"
+    },
+    {
+      "id": 1747997312886,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T10:48:32.886Z"
+    },
+    {
+      "id": 1747997646994,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:54:06.994Z"
+    },
+    {
+      "id": 1747997712980,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T10:55:12.980Z"
+    },
+    {
+      "id": 1747997713004,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:55:13.004Z"
+    },
+    {
+      "id": 1747997725831,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T10:55:25.832Z"
+    },
+    {
+      "id": 1747997725856,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:55:25.856Z"
+    },
+    {
+      "id": 1747997752776,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T10:55:52.776Z"
+    },
+    {
+      "id": 1747997752801,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:55:52.801Z"
+    },
+    {
+      "id": 1747997781379,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:56:21.379Z"
+    },
+    {
+      "id": 1747997791808,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:56:31.808Z"
+    },
+    {
+      "id": 1747997792242,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:56:32.242Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "Ng8EHtzKeSCpqTJeAAAF",
+      "username": "kaka",
+      "userId": "1747996984650",
+      "joinedAt": "2025-05-23T10:56:32.240Z"
+    }
+  ],
+  "accounts": [
+    {
+      "id": "1747996984650",
+      "username": "kaka",
+      "password": "123456",
+      "createdAt": "2025-05-23T10:43:04.650Z"
+    },
+    {
+      "id": "1747997005643",
+      "username": "hello",
+      "password": "123456",
+      "createdAt": "2025-05-23T10:43:25.643Z"
+    },
+    {
+      "id": "1747997076261",
+      "username": "test",
+      "password": "123456",
+      "createdAt": "2025-05-23T10:44:36.261Z"
+    }
+  ]
+}
