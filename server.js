@@ -1,9 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
-const socketIO = require('socket.io');
+const socketIo = require('socket.io');
 const cors = require('cors');
-const { initDatabase, db } = require('./database');
+const path = require('path');
+const { initDatabase, migrateDatabase, db } = require('./database');
+const { generateToken, verifyToken, generateAndSaveToken, verifyTokenWithDB, authenticateToken, authenticateSocketToken, revokeToken, revokeAllUserTokens } = require('./auth');
+
+// 用户Socket映射，用于跟踪每个用户的Socket连接（实现单设备登录）
+const userSocketMap = new Map(); // userId -> socketId
 
 const app = express();
 app.use(cors());
@@ -11,12 +16,15 @@ app.use(express.json());
 
 // 创建服务器
 const server = http.createServer(app);
-const io = socketIO(server, {
+const io = socketIo(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
   }
 });
+
+// 为Socket.io添加token验证中间件
+io.use(authenticateSocketToken);
 
 // 初始化数据库
 initDatabase().catch(error => {
@@ -25,7 +33,7 @@ initDatabase().catch(error => {
 });
 
 // API路由
-app.get('/api/messages', async (req, res) => {
+app.get('/api/messages', authenticateToken, async (req, res) => {
   try {
     // 获取最近的五条消息
     const limit = req.query.limit ? parseInt(req.query.limit) : 5;
@@ -49,7 +57,7 @@ app.get('/api/messages', async (req, res) => {
 });
 
 // 获取在线用户列表API
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', authenticateToken, async (req, res) => {
   try {
     const users = await db.getAllOnlineUsers();
     
@@ -82,10 +90,20 @@ app.post('/api/register', async (req, res) => {
     // 创建新用户账号
     const newUser = await db.createAccount(username, password);
     
-    // 返回成功消息（不返回密码）
+    // 生成JWT token并保存到数据库
+    const deviceInfo = req.headers['user-agent'] || 'Unknown Device';
+    const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'Unknown IP';
+    
+    const tokenData = await generateAndSaveToken({
+      id: newUser.id,
+      username: newUser.username
+    }, deviceInfo, ipAddress);
+    
+    // 返回成功消息（包含token）
     res.status(201).json({
       success: true,
       message: '注册成功',
+      token: tokenData.token,
       user: {
         id: newUser.id.toString(),
         username: newUser.username,
@@ -114,10 +132,24 @@ app.post('/api/login', async (req, res) => {
       });
     }
     
+    // 在生成新token之前，先撤销该用户的所有现有token（实现单设备登录）
+    console.log(`用户 ${username} 登录，撤销所有现有token以确保单设备登录`);
+    await revokeAllUserTokens(user.id);
+    
+    // 生成JWT token并保存到数据库
+    const deviceInfo = req.headers['user-agent'] || 'Unknown Device';
+    const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'Unknown IP';
+    
+    const tokenData = await generateAndSaveToken({
+      id: user.id,
+      username: user.username
+    }, deviceInfo, ipAddress);
+    
     // 登录成功（不返回密码）
     res.json({
       success: true,
       message: '登录成功',
+      token: tokenData.token,
       user: {
         id: user.id.toString(),
         username: user.username,
@@ -130,11 +162,72 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// 用户登出API
+app.post('/api/logout', authenticateToken, async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (token) {
+      // 撤销当前token
+      await revokeToken(token);
+    }
+    
+    res.json({
+      success: true,
+      message: '登出成功'
+    });
+  } catch (error) {
+    console.error('登出失败:', error);
+    res.status(500).json({ success: false, message: '登出失败，请稍后再试' });
+  }
+});
+
+// 撤销所有token的API（用于强制登出所有设备）
+app.post('/api/logout-all', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // 撤销用户的所有token
+    const revokedTokens = await revokeAllUserTokens(userId);
+    
+    res.json({
+      success: true,
+      message: `已撤销 ${revokedTokens.length} 个设备的登录状态`
+    });
+  } catch (error) {
+    console.error('撤销所有token失败:', error);
+    res.status(500).json({ success: false, message: '操作失败，请稍后再试' });
+  }
+});
+
 // Socket.io连接处理
 io.on('connection', (socket) => {
-  console.log('用户已连接:', socket.id);
+  console.log('用户已连接:', socket.id, socket.isAuthenticated ? '(已认证)' : '(匿名)');
   
-  // 用户请求在线用户列表
+  // 如果是认证用户，检查单设备登录限制
+  if (socket.isAuthenticated && socket.user) {
+    const userId = socket.user.id.toString();
+    const existingSocketId = userSocketMap.get(userId);
+    
+    // 如果该用户已经有其他Socket连接，断开旧连接
+    if (existingSocketId && existingSocketId !== socket.id) {
+      console.log(`用户 ${socket.user.username} 在新设备登录，断开旧设备连接: ${existingSocketId}`);
+      const existingSocket = io.sockets.sockets.get(existingSocketId);
+      if (existingSocket) {
+        existingSocket.emit('force_logout', { 
+          message: '您的账户在其他设备上登录，当前连接将被断开' 
+        });
+        existingSocket.disconnect(true);
+      }
+    }
+    
+    // 更新用户Socket映射
+    userSocketMap.set(userId, socket.id);
+    console.log(`用户 ${socket.user.username} (${userId}) 的Socket连接已更新: ${socket.id}`);
+  }
+  
+  // 用户请求在线用户列表（允许匿名用户查看）
   socket.on('get_users', async () => {
     try {
       const users = await db.getAllOnlineUsers();
@@ -150,8 +243,13 @@ io.on('connection', (socket) => {
     }
   });
   
-  // 用户加入聊天
+  // 用户加入聊天（需要认证）
   socket.on('user_join', async (userData) => {
+    if (!socket.isAuthenticated) {
+      console.warn('未认证用户尝试加入聊天:', socket.id);
+      return;
+    }
+    
     try {
       const username = typeof userData === 'string' ? userData : userData.username;
       const userId = typeof userData === 'string' ? socket.id : userData.userId;
@@ -211,8 +309,13 @@ io.on('connection', (socket) => {
     }
   });
   
-  // 接收消息
+  // 接收消息（需要认证）
   socket.on('send_message', async (messageData) => {
+    if (!socket.isAuthenticated) {
+      console.warn('未认证用户尝试发送消息:', socket.id);
+      return;
+    }
+    
     try {
       const message = await db.addMessage(
         socket.id,
@@ -243,39 +346,54 @@ io.on('connection', (socket) => {
     try {
       console.log('用户断开连接:', socket.id);
       
-      // 获取断开连接的用户
-      const user = await db.removeOnlineUser(socket.id);
+      // 如果是认证用户，从Socket映射中移除
+      if (socket.isAuthenticated && socket.user) {
+        const userId = socket.user.id.toString();
+        const mappedSocketId = userSocketMap.get(userId);
+        
+        // 只有当映射的Socket ID与当前断开的Socket ID匹配时才移除
+        if (mappedSocketId === socket.id) {
+          userSocketMap.delete(userId);
+          console.log(`用户 ${socket.user.username} (${userId}) 的Socket映射已移除`);
+        }
+      }
       
-      if (user) {
-        // 广播用户离开消息
-        const leaveMessage = await db.addMessage(
-          socket.id,
-          user.username,
-          `${user.username} 离开了聊天室`,
-          'system'
-        );
+      // 只有认证用户才会在在线用户列表中
+      if (socket.isAuthenticated) {
+        // 获取断开连接的用户
+        const user = await db.removeOnlineUser(socket.id);
         
-        // 格式化消息数据
-        const formattedMessage = {
-          id: leaveMessage.id,
-          userId: leaveMessage.user_id,
-          username: leaveMessage.username,
-          content: leaveMessage.content,
-          type: leaveMessage.message_type,
-          timestamp: leaveMessage.created_time
-        };
-        
-        io.emit('message', formattedMessage);
-        
-        // 广播更新后的用户列表
-        const updatedUsers = await db.getAllOnlineUsers();
-        const formattedUsers = updatedUsers.map(user => ({
-          id: user.id,
-          username: user.username,
-          userId: user.user_id,
-          joinedAt: user.created_time
-        }));
-        io.emit('users_list', formattedUsers);
+        if (user) {
+          // 广播用户离开消息
+          const leaveMessage = await db.addMessage(
+            socket.id,
+            user.username,
+            `${user.username} 离开了聊天室`,
+            'system'
+          );
+          
+          // 格式化消息数据
+          const formattedMessage = {
+            id: leaveMessage.id,
+            userId: leaveMessage.user_id,
+            username: leaveMessage.username,
+            content: leaveMessage.content,
+            type: leaveMessage.message_type,
+            timestamp: leaveMessage.created_time
+          };
+          
+          io.emit('message', formattedMessage);
+          
+          // 广播更新后的用户列表
+          const updatedUsers = await db.getAllOnlineUsers();
+          const formattedUsers = updatedUsers.map(user => ({
+            id: user.id,
+            username: user.username,
+            userId: user.user_id,
+            joinedAt: user.created_time
+          }));
+          io.emit('users_list', formattedUsers);
+        }
       }
     } catch (error) {
       console.error('处理用户断开连接失败:', error);
@@ -285,6 +403,20 @@ io.on('connection', (socket) => {
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;
+
+// 定时清理过期token（每小时执行一次）
+setInterval(async () => {
+  try {
+    const cleanedCount = await db.cleanExpiredTokens();
+    if (cleanedCount > 0) {
+      console.log(`清理了 ${cleanedCount} 个过期token`);
+    }
+  } catch (error) {
+    console.error('清理过期token失败:', error);
+  }
+}, 60 * 60 * 1000); // 1小时
+
 server.listen(PORT, () => {
   console.log(`服务器运行在端口 ${PORT}`);
+  console.log('Token清理任务已启动，每小时执行一次');
 }); 

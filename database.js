@@ -144,6 +144,29 @@ async function initDatabase() {
       )
     `);
 
+    // 创建用户token表
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        token_hash VARCHAR(255) NOT NULL,
+        device_info VARCHAR(255),
+        ip_address INET,
+        expires_at TIMESTAMP NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(token_hash)
+      )
+    `);
+
+    // 创建索引以提高查询性能
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_user_tokens_user_id ON user_tokens(user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_tokens_token_hash ON user_tokens(token_hash);
+      CREATE INDEX IF NOT EXISTS idx_user_tokens_expires_at ON user_tokens(expires_at);
+    `);
+
     // 创建触发器函数来自动更新update_time
     await pool.query(`
       CREATE OR REPLACE FUNCTION update_modified_column()
@@ -262,7 +285,56 @@ const db = {
   async clearAllData() {
     await pool.query('DELETE FROM messages');
     await pool.query('DELETE FROM online_users');
+    await pool.query('DELETE FROM user_tokens');
     await pool.query('DELETE FROM accounts');
+  },
+
+  // Token相关操作
+  async saveToken(userId, tokenHash, deviceInfo, ipAddress, expiresAt) {
+    const result = await pool.query(
+      'INSERT INTO user_tokens (user_id, token_hash, device_info, ip_address, expires_at) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [userId, tokenHash, deviceInfo, ipAddress, expiresAt]
+    );
+    return result.rows[0];
+  },
+
+  async findTokenByHash(tokenHash) {
+    const result = await pool.query(
+      'SELECT ut.*, a.username FROM user_tokens ut JOIN accounts a ON ut.user_id = a.id WHERE ut.token_hash = $1 AND ut.is_active = true AND ut.expires_at > NOW()',
+      [tokenHash]
+    );
+    return result.rows[0];
+  },
+
+  async revokeToken(tokenHash) {
+    const result = await pool.query(
+      'UPDATE user_tokens SET is_active = false WHERE token_hash = $1 RETURNING *',
+      [tokenHash]
+    );
+    return result.rows[0];
+  },
+
+  async revokeAllUserTokens(userId) {
+    const result = await pool.query(
+      'UPDATE user_tokens SET is_active = false WHERE user_id = $1 RETURNING *',
+      [userId]
+    );
+    return result.rows;
+  },
+
+  async cleanExpiredTokens() {
+    const result = await pool.query(
+      'DELETE FROM user_tokens WHERE expires_at < NOW() OR is_active = false'
+    );
+    return result.rowCount;
+  },
+
+  async getUserActiveTokens(userId) {
+    const result = await pool.query(
+      'SELECT * FROM user_tokens WHERE user_id = $1 AND is_active = true AND expires_at > NOW() ORDER BY created_time DESC',
+      [userId]
+    );
+    return result.rows;
   }
 };
 

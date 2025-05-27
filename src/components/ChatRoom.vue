@@ -1,25 +1,16 @@
 <template>
   <div class="chat-container">
-    <!-- 服务器状态提示 -->
-    <div v-if="!serverOnline" class="server-status-alert">
-      <div class="alert-content">
-        <i class="status-icon">!</i>
-        <span>服务器连接失败，请检查服务器是否在线</span>
-        <button @click="checkServerStatus" class="retry-btn">重试连接</button>
-      </div>
-    </div>
-
     <div v-if="!isAuthenticated" class="auth-container">
       <div class="tabs">
         <button 
           :class="['tab-btn', { active: authTab === 'login' }]" 
-          @click="authTab = 'login'"
+          @click="authTab = 'login'; loginError = ''; registerError = ''"
         >
           登录
         </button>
         <button 
           :class="['tab-btn', { active: authTab === 'register' }]" 
-          @click="authTab = 'register'"
+          @click="authTab = 'register'; loginError = ''; registerError = ''"
         >
           注册
         </button>
@@ -163,6 +154,7 @@ export default {
       authTab: 'login',
       isAuthenticated: false,
       currentUser: null,
+      token: null,
       loginForm: {
         username: '',
         password: ''
@@ -174,98 +166,39 @@ export default {
       },
       loginError: '',
       registerError: '',
-      serverOnline: true,
-      checkingServer: false,
-      reconnectInterval: null,
       hasJoinedChat: false
     };
   },
   created() {
     // 从本地存储恢复用户状态
     const savedUserData = localStorage.getItem('chatUserData');
-    if (savedUserData) {
+    const savedToken = localStorage.getItem('chatToken');
+    if (savedUserData && savedToken) {
       try {
         const userData = JSON.parse(savedUserData);
         this.isAuthenticated = true;
         this.currentUser = userData;
+        this.token = savedToken;
         
         // 直接使用账号用户名作为聊天昵称
         this.username = userData.username;
+        
+        // 如果用户已登录，初始化Socket连接
+        this.initializeSocketConnection();
       } catch (e) {
         console.error('解析用户数据失败', e);
         localStorage.removeItem('chatUserData');
+        localStorage.removeItem('chatToken');
       }
     }
-    
-    // 初始检查服务器状态
-    this.checkServerStatus();
   },
   beforeDestroy() {
-    // 清除重连定时器
-    if (this.reconnectInterval) {
-      clearInterval(this.reconnectInterval);
-    }
-    
     // 在组件销毁前断开连接
     if (this.socket) {
       this.socket.disconnect();
     }
   },
   methods: {
-    // 检查服务器状态
-    checkServerStatus() {
-      if (this.checkingServer) return;
-      
-      this.checkingServer = true;
-      
-      // 尝试连接服务器
-      fetch(`${this.serverUrl}/api/users`)
-        .then(response => {
-          if (response.ok) {
-            this.serverOnline = true;
-            
-            // 停止自动重连
-            if (this.reconnectInterval) {
-              clearInterval(this.reconnectInterval);
-              this.reconnectInterval = null;
-            }
-            
-            // 如果之前服务器不在线或Socket未连接，初始化Socket连接
-            if (!this.socket || !this.socket.connected) {
-              // 确保只初始化一次
-              if (!this.socket) {
-                this.initializeSocketConnection();
-              } else if (this.socket && !this.socket.connected) {
-                // 如果Socket存在但未连接，尝试重新连接
-                this.socket.connect();
-              }
-            }
-            
-            return response.json();
-          } else {
-            throw new Error('服务器响应错误');
-          }
-        })
-        .then(data => {
-          // 更新用户列表
-          this.users = data;
-        })
-        .catch(error => {
-          console.error('服务器连接失败:', error);
-          this.serverOnline = false;
-          
-          // 启动自动重连
-          if (!this.reconnectInterval) {
-            this.reconnectInterval = setInterval(() => {
-              this.checkServerStatus();
-            }, 5000); // 每5秒尝试重连
-          }
-        })
-        .finally(() => {
-          this.checkingServer = false;
-        });
-    },
-    
     // 初始化Socket连接
     initializeSocketConnection() {
       // 断开可能存在的连接
@@ -280,38 +213,65 @@ export default {
         
         // 确保足够的时间让旧连接完全关闭
         setTimeout(() => {
-          // 创建新连接
-          console.log('创建新的Socket连接');
-          this.socket = io(this.serverUrl);
-          
-          // 设置事件监听器
-          this.setupSocketListeners();
-          
-          // 获取历史消息（限制5条）
-          this.fetchHistoryMessages();
+          this.createSocketConnection();
         }, 300);
       } else {
         // 初始化新连接
-        console.log('初始化Socket连接');
-        this.socket = io(this.serverUrl);
-        
-        // 设置事件监听器
-        this.setupSocketListeners();
-        
-        // 获取历史消息（限制5条）
+        this.createSocketConnection();
+      }
+    },
+    
+    // 创建Socket连接
+    createSocketConnection() {
+      console.log('创建Socket连接');
+      const socketOptions = {
+        auth: {}
+      };
+      
+      // 只有在已登录且有有效token时才添加认证信息
+      if (this.isAuthenticated && this.token) {
+        socketOptions.auth.token = this.token;
+        console.log('使用token创建认证连接');
+      } else {
+        console.log('创建匿名连接（无token）');
+      }
+      
+      this.socket = io(this.serverUrl, socketOptions);
+      
+      // 设置事件监听器
+      this.setupSocketListeners();
+      
+      // 只有在已登录时才获取历史消息
+      if (this.isAuthenticated && this.token) {
         this.fetchHistoryMessages();
       }
     },
     
     // 获取历史消息
     fetchHistoryMessages() {
-      fetch(`${this.serverUrl}/api/messages?limit=5`)
-        .then(response => response.json())
+      // 准备请求头
+      const headers = {};
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
+      
+      fetch(`${this.serverUrl}/api/messages?limit=5`, { headers })
+        .then(response => {
+          if (response.status === 401 || response.status === 403) {
+            // Token无效，处理token过期但不抛出错误
+            this.handleTokenExpired();
+            return null; // 返回null表示没有数据
+          }
+          return response.json();
+        })
         .then(data => {
-          this.messages = data;
-          this.$nextTick(() => {
-            this.scrollToBottom();
-          });
+          // 只有在有数据时才更新消息列表
+          if (data) {
+            this.messages = data;
+            this.$nextTick(() => {
+              this.scrollToBottom();
+            });
+          }
         })
         .catch(error => console.error('获取历史消息失败:', error));
     },
@@ -321,7 +281,6 @@ export default {
       this.socket.on('connect', () => {
         console.log('已连接到服务器');
         this.socketId = this.socket.id;
-        this.serverOnline = true;
         this.hasJoinedChat = false;
         
         // 如果已登录并有用户名，自动重新加入聊天
@@ -336,16 +295,17 @@ export default {
       // 连接错误事件
       this.socket.on('connect_error', (error) => {
         console.error('Socket连接错误:', error);
-        this.serverOnline = false;
+        
+        // 检查是否是认证错误，并且只有在用户已经登录的情况下才处理
+        if (error.message && error.message.includes('Authentication error') && this.isAuthenticated && this.token) {
+          console.error('Socket认证失败:', error.message);
+          this.handleTokenExpired();
+        }
       });
       
       // 断开连接事件
       this.socket.on('disconnect', (reason) => {
         console.log('与服务器断开连接:', reason);
-        if (reason === 'io server disconnect' || reason === 'transport close') {
-          // 服务器主动断开或网络问题
-          this.serverOnline = false;
-        }
       });
       
       // 监听消息事件
@@ -360,16 +320,21 @@ export default {
       this.socket.on('users_list', (usersList) => {
         this.users = usersList;
       });
+      
+      // 监听强制登出事件（当账户在其他设备登录时）
+      this.socket.on('force_logout', (data) => {
+        console.log('收到强制登出事件:', data.message);
+        
+        // 显示提示信息
+        alert(data.message || '您的账户在其他设备上登录，当前连接将被断开');
+        
+        // 执行登出操作
+        this.handleForceLogout();
+      });
     },
     
     login() {
-      // 如果服务器不在线，提示用户
-      if (!this.serverOnline) {
-        this.loginError = '服务器不在线，请稍后再试';
-        return;
-      }
-      
-      // 重置错误信息
+      // 清除之前的错误信息
       this.loginError = '';
       
       // 验证表单
@@ -392,9 +357,11 @@ export default {
           // 登录成功
           this.isAuthenticated = true;
           this.currentUser = data.user;
+          this.token = data.token;
           
-          // 保存用户数据到本地存储
+          // 保存用户数据和token到本地存储
           localStorage.setItem('chatUserData', JSON.stringify(data.user));
+          localStorage.setItem('chatToken', data.token);
           
           // 直接使用账号用户名作为聊天昵称
           this.username = data.user.username;
@@ -425,13 +392,7 @@ export default {
       });
     },
     register() {
-      // 如果服务器不在线，提示用户
-      if (!this.serverOnline) {
-        this.registerError = '服务器不在线，请稍后再试';
-        return;
-      }
-      
-      // 重置错误信息
+      // 清除之前的错误信息
       this.registerError = '';
       
       // 验证表单
@@ -462,9 +423,11 @@ export default {
           // 注册成功，自动登录
           this.isAuthenticated = true;
           this.currentUser = data.user;
+          this.token = data.token;
           
-          // 保存用户数据到本地存储
+          // 保存用户数据和token到本地存储
           localStorage.setItem('chatUserData', JSON.stringify(data.user));
+          localStorage.setItem('chatToken', data.token);
           
           // 直接使用账号用户名作为聊天昵称
           this.username = data.user.username;
@@ -497,23 +460,19 @@ export default {
     logoutAccount() {
       // 清除账号信息
       localStorage.removeItem('chatUserData');
+      localStorage.removeItem('chatToken');
       
       // 重置状态
       this.isAuthenticated = false;
       this.currentUser = null;
+      this.token = null;
       this.username = '';
       this.hasJoinedChat = false;
       
-      // 处理Socket连接
+      // 处理Socket连接 - 断开连接但不重连
       if (this.socket) {
         this.socket.disconnect();
-        
-        // 重新连接
-        setTimeout(() => {
-          if (this.serverOnline) {
-            this.initializeSocketConnection();
-          }
-        }, 500);
+        this.socket = null; // 清空socket引用
       }
       
       // 重置表单
@@ -521,12 +480,6 @@ export default {
       this.registerForm = { username: '', password: '', confirmPassword: '' };
     },
     joinChatWithUsername(username) {
-      // 检查服务器和连接状态
-      if (!this.serverOnline) {
-        console.warn('服务器不在线，无法加入聊天');
-        return;
-      }
-      
       // 避免重复加入聊天室
       if (this.hasJoinedChat) {
         console.log('已经加入聊天室，避免重复加入');
@@ -558,12 +511,6 @@ export default {
       this.hasJoinedChat = true;
     },
     sendMessage() {
-      // 如果服务器不在线，不允许发送消息
-      if (!this.serverOnline) {
-        alert('服务器不在线，无法发送消息');
-        return;
-      }
-      
       if (this.newMessage.trim() && this.username) {
         const messageData = {
           username: this.username,
@@ -585,60 +532,41 @@ export default {
     formatTime(timestamp) {
       const date = new Date(timestamp);
       return date.toLocaleTimeString();
+    },
+    handleTokenExpired() {
+      // 清除本地存储的用户数据和token
+      localStorage.removeItem('chatUserData');
+      localStorage.removeItem('chatToken');
+      
+      // 处理Token无效的逻辑
+      this.isAuthenticated = false;
+      this.currentUser = null;
+      this.token = null;
+      this.username = '';
+      this.hasJoinedChat = false;
+      
+      // 处理Socket连接 - 断开当前连接但不立即重连
+      if (this.socket) {
+        this.socket.disconnect();
+        this.socket = null; // 清空socket引用，避免重复连接
+      }
+      
+      // 重置表单
+      this.loginForm = { username: '', password: '' };
+      this.registerForm = { username: '', password: '', confirmPassword: '' };
+      
+      // 显示错误提示
+      this.loginError = 'Token已过期，请重新登录';
+    },
+    handleForceLogout() {
+      // 执行登出操作
+      this.logoutAccount();
     }
   }
 };
 </script>
 
 <style scoped>
-/* 添加服务器状态提示样式 */
-.server-status-alert {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 10px;
-  z-index: 1000;
-  text-align: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.alert-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.status-icon {
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  background-color: #721c24;
-  color: white;
-  border-radius: 50%;
-  text-align: center;
-  line-height: 24px;
-  font-weight: bold;
-  font-style: normal;
-}
-
-.retry-btn {
-  background-color: #721c24;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-  margin-left: 10px;
-}
-
-.retry-btn:hover {
-  background-color: #5a171d;
-}
-
 .chat-container {
   max-width: 1000px;
   margin: 0 auto;
