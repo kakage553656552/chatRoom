@@ -115,9 +115,27 @@ io.on('connection', (socket) => {
     const username = typeof userData === 'string' ? userData : userData.username;
     const userId = typeof userData === 'string' ? socket.id : userData.userId;
     
-    // 先检查并移除可能的重复用户
-    db.get('users').remove({ userId: userId }).write();
+    // 检查用户是否已经在聊天室中
+    const existingUser = db.get('users').find({ userId: userId }).value();
     
+    // 如果用户已经存在，但socket ID改变了（例如重新连接）
+    if (existingUser) {
+      console.log(`用户 ${username} (${userId}) 已经在聊天室中，更新socket ID`);
+      
+      // 仅更新socket ID，不发送新的加入消息
+      db.get('users')
+        .find({ userId: userId })
+        .assign({ id: socket.id })
+        .write();
+      
+      // 广播最新的用户列表给所有客户端
+      const users = db.get('users').value();
+      io.emit('users_list', users);
+      
+      return;
+    }
+    
+    // 添加新用户
     const user = {
       id: socket.id,
       username,

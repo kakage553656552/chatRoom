@@ -176,13 +176,11 @@ export default {
       registerError: '',
       serverOnline: true,
       checkingServer: false,
-      reconnectInterval: null
+      reconnectInterval: null,
+      hasJoinedChat: false
     };
   },
   created() {
-    // 初始检查服务器状态
-    this.checkServerStatus();
-    
     // 从本地存储恢复用户状态
     const savedUserData = localStorage.getItem('chatUserData');
     if (savedUserData) {
@@ -198,6 +196,9 @@ export default {
         localStorage.removeItem('chatUserData');
       }
     }
+    
+    // 初始检查服务器状态
+    this.checkServerStatus();
   },
   beforeDestroy() {
     // 清除重连定时器
@@ -223,15 +224,21 @@ export default {
           if (response.ok) {
             this.serverOnline = true;
             
-            // 如果之前服务器不在线，重新初始化Socket连接
-            if (!this.socket || !this.socket.connected) {
-              this.initializeSocketConnection();
-            }
-            
             // 停止自动重连
             if (this.reconnectInterval) {
               clearInterval(this.reconnectInterval);
               this.reconnectInterval = null;
+            }
+            
+            // 如果之前服务器不在线或Socket未连接，初始化Socket连接
+            if (!this.socket || !this.socket.connected) {
+              // 确保只初始化一次
+              if (!this.socket) {
+                this.initializeSocketConnection();
+              } else if (this.socket && !this.socket.connected) {
+                // 如果Socket存在但未连接，尝试重新连接
+                this.socket.connect();
+              }
             }
             
             return response.json();
@@ -263,16 +270,41 @@ export default {
     initializeSocketConnection() {
       // 断开可能存在的连接
       if (this.socket) {
+        console.log('断开旧的Socket连接');
+        
+        // 移除所有事件监听器，防止重复监听
+        this.socket.removeAllListeners();
+        
+        // 断开连接
         this.socket.disconnect();
+        
+        // 确保足够的时间让旧连接完全关闭
+        setTimeout(() => {
+          // 创建新连接
+          console.log('创建新的Socket连接');
+          this.socket = io(this.serverUrl);
+          
+          // 设置事件监听器
+          this.setupSocketListeners();
+          
+          // 获取历史消息（限制5条）
+          this.fetchHistoryMessages();
+        }, 300);
+      } else {
+        // 初始化新连接
+        console.log('初始化Socket连接');
+        this.socket = io(this.serverUrl);
+        
+        // 设置事件监听器
+        this.setupSocketListeners();
+        
+        // 获取历史消息（限制5条）
+        this.fetchHistoryMessages();
       }
-      
-      // 初始化新连接
-      this.socket = io(this.serverUrl);
-      
-      // 设置事件监听器
-      this.setupSocketListeners();
-      
-      // 获取历史消息（限制5条）
+    },
+    
+    // 获取历史消息
+    fetchHistoryMessages() {
       fetch(`${this.serverUrl}/api/messages?limit=5`)
         .then(response => response.json())
         .then(data => {
@@ -290,6 +322,7 @@ export default {
         console.log('已连接到服务器');
         this.socketId = this.socket.id;
         this.serverOnline = true;
+        this.hasJoinedChat = false;
         
         // 如果已登录并有用户名，自动重新加入聊天
         if (this.isAuthenticated && this.username) {
@@ -369,16 +402,18 @@ export default {
           // 清空表单
           this.loginForm = { username: '', password: '' };
           
+          // 重置hasJoinedChat标志
+          this.hasJoinedChat = false;
+          
           // 重新初始化连接并加入聊天
           this.messages = []; // 清空之前的消息
-          this.initializeSocketConnection();
           
-          // 稍后加入聊天（等待连接和消息加载完成）
-          setTimeout(() => {
-            if (this.socket && this.socket.connected) {
-              this.joinChatWithUsername(this.username);
-            }
-          }, 500);
+          // 如果已经有一个连接，先断开
+          if (this.socket && this.socket.connected) {
+            this.socket.disconnect();
+          }
+          
+          this.initializeSocketConnection();
         } else {
           // 登录失败
           this.loginError = data.message || '登录失败，请检查用户名和密码';
@@ -437,16 +472,18 @@ export default {
           // 清空表单
           this.registerForm = { username: '', password: '', confirmPassword: '' };
           
+          // 重置hasJoinedChat标志
+          this.hasJoinedChat = false;
+          
           // 重新初始化连接并加入聊天
           this.messages = []; // 清空之前的消息
-          this.initializeSocketConnection();
           
-          // 稍后加入聊天（等待连接和消息加载完成）
-          setTimeout(() => {
-            if (this.socket && this.socket.connected) {
-              this.joinChatWithUsername(this.username);
-            }
-          }, 500);
+          // 如果已经有一个连接，先断开
+          if (this.socket && this.socket.connected) {
+            this.socket.disconnect();
+          }
+          
+          this.initializeSocketConnection();
         } else {
           // 注册失败
           this.registerError = data.message || '注册失败，请尝试其他用户名';
@@ -465,6 +502,7 @@ export default {
       this.isAuthenticated = false;
       this.currentUser = null;
       this.username = '';
+      this.hasJoinedChat = false;
       
       // 处理Socket连接
       if (this.socket) {
@@ -489,17 +527,24 @@ export default {
         return;
       }
       
+      // 避免重复加入聊天室
+      if (this.hasJoinedChat) {
+        console.log('已经加入聊天室，避免重复加入');
+        return;
+      }
+      
       if (!this.socket || !this.socket.connected) {
         console.warn('Socket未连接，尝试重新连接');
         this.initializeSocketConnection();
         
         // 稍后再尝试加入
         setTimeout(() => {
-          if (this.socket && this.socket.connected) {
+          if (this.socket && this.socket.connected && !this.hasJoinedChat) {
             this.socket.emit('user_join', {
               username: username,
               userId: this.currentUser.id
             });
+            this.hasJoinedChat = true;
           }
         }, 1000);
         return;
@@ -510,6 +555,7 @@ export default {
         username: username,
         userId: this.currentUser.id
       });
+      this.hasJoinedChat = true;
     },
     sendMessage() {
       // 如果服务器不在线，不允许发送消息

@@ -311,14 +311,272 @@
       "type": "system",
       "content": "kaka 加入了聊天室",
       "timestamp": "2025-05-23T10:56:32.242Z"
+    },
+    {
+      "id": 1747997960611,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:59:20.611Z"
+    },
+    {
+      "id": 1747997960642,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:59:20.642Z"
+    },
+    {
+      "id": 1747997962568,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:59:22.568Z"
+    },
+    {
+      "id": 1747997979440,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:59:39.440Z"
+    },
+    {
+      "id": 1747997985031,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T10:59:45.031Z"
+    },
+    {
+      "id": 1747997985173,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T10:59:45.173Z"
+    },
+    {
+      "id": 1747998079772,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:01:19.772Z"
+    },
+    {
+      "id": 1747998080090,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:01:20.090Z"
+    },
+    {
+      "id": 1747998080119,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:01:20.119Z"
+    },
+    {
+      "id": 1747998100660,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T11:01:40.660Z"
+    },
+    {
+      "id": 1747998100686,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:01:40.686Z"
+    },
+    {
+      "id": 1747998100703,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:01:40.703Z"
+    },
+    {
+      "id": 1747998100737,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:01:40.737Z"
+    },
+    {
+      "id": 1747998118754,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T11:01:58.754Z"
+    },
+    {
+      "id": 1747998118785,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:01:58.785Z"
+    },
+    {
+      "id": 1747998118814,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:01:58.814Z"
+    },
+    {
+      "id": 1747998118842,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:01:58.842Z"
+    },
+    {
+      "id": 1747998133873,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T11:02:13.873Z"
+    },
+    {
+      "id": 1747998133898,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:02:13.898Z"
+    },
+    {
+      "id": 1747998133921,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:02:13.921Z"
+    },
+    {
+      "id": 1747998133933,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:02:13.933Z"
+    },
+    {
+      "id": 1747998232166,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T11:03:52.166Z"
+    },
+    {
+      "id": 1747998232618,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:03:52.618Z"
+    },
+    {
+      "id": 1747998234668,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T11:03:54.668Z"
+    },
+    {
+      "id": 1747998235088,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:03:55.088Z"
+    },
+    {
+      "id": 1747998239603,
+      "userId": "CjDu4G-DlVF1O1X_AAAN",
+      "username": "kaka",
+      "content": "111",
+      "timestamp": "2025-05-23T11:03:59.603Z",
+      "type": "user"
+    },
+    {
+      "id": 1747998241695,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T11:04:01.695Z"
+    },
+    {
+      "id": 1747998242140,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:04:02.140Z"
+    },
+    {
+      "id": 1747998249243,
+      "userId": "DtT9fLmSGiBu3rjeAAAP",
+      "username": "kaka",
+      "content": "111",
+      "timestamp": "2025-05-23T11:04:09.243Z",
+      "type": "user"
+    },
+    {
+      "id": 1747998252346,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-23T11:04:12.346Z"
+    },
+    {
+      "id": 1747998252778,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-23T11:04:12.778Z"
+    },
+    {
+      "id": 1748223101405,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-26T01:31:41.405Z"
+    },
+    {
+      "id": 1748311645674,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-27T02:07:25.674Z"
+    },
+    {
+      "id": 1748311650244,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-27T02:07:30.244Z"
+    },
+    {
+      "id": 1748311650377,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-27T02:07:30.377Z"
+    },
+    {
+      "id": 1748311658678,
+      "type": "system",
+      "content": "test 加入了聊天室",
+      "timestamp": "2025-05-27T02:07:38.678Z"
+    },
+    {
+      "id": 1748311697448,
+      "userId": "sIYusKMa-B262rxOAAAF",
+      "username": "test",
+      "content": "222",
+      "timestamp": "2025-05-27T02:08:17.448Z",
+      "type": "user"
+    },
+    {
+      "id": 1748311703741,
+      "type": "system",
+      "content": "test 离开了聊天室",
+      "timestamp": "2025-05-27T02:08:23.741Z"
+    },
+    {
+      "id": 1748311731763,
+      "type": "system",
+      "content": "test 加入了聊天室",
+      "timestamp": "2025-05-27T02:08:51.763Z"
+    },
+    {
+      "id": 1748311738990,
+      "type": "system",
+      "content": "kaka 离开了聊天室",
+      "timestamp": "2025-05-27T02:08:58.990Z"
+    },
+    {
+      "id": 1748311739120,
+      "type": "system",
+      "content": "kaka 加入了聊天室",
+      "timestamp": "2025-05-27T02:08:59.120Z"
     }
   ],
   "users": [
     {
-      "id": "Ng8EHtzKeSCpqTJeAAAF",
+      "id": "YVA3vQMcTgbhsupWAAAL",
+      "username": "test",
+      "userId": "1747997076261",
+      "joinedAt": "2025-05-27T02:08:51.762Z"
+    },
+    {
+      "id": "umQJoQ5SgbYQ3ehNAAAN",
       "username": "kaka",
       "userId": "1747996984650",
-      "joinedAt": "2025-05-23T10:56:32.240Z"
+      "joinedAt": "2025-05-27T02:08:59.119Z"
     }
   ],
   "accounts": [
