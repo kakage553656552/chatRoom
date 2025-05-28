@@ -280,21 +280,6 @@ io.on('connection', (socket) => {
       // 添加新用户
       await db.addOnlineUser(socket.id, username, userId);
       
-      // 广播用户加入消息
-      const joinMessage = await db.addMessage(socket.id, username, `${username} 加入了聊天室`, 'system');
-      
-      // 格式化消息数据
-      const formattedMessage = {
-        id: joinMessage.id,
-        userId: joinMessage.user_id,
-        username: joinMessage.username,
-        content: joinMessage.content,
-        type: joinMessage.message_type,
-        timestamp: joinMessage.created_time
-      };
-      
-      io.emit('message', formattedMessage);
-      
       // 广播最新的用户列表给所有客户端
       const users = await db.getAllOnlineUsers();
       const formattedUsers = users.map(user => ({
@@ -364,26 +349,6 @@ io.on('connection', (socket) => {
         const user = await db.removeOnlineUser(socket.id);
         
         if (user) {
-          // 广播用户离开消息
-          const leaveMessage = await db.addMessage(
-            socket.id,
-            user.username,
-            `${user.username} 离开了聊天室`,
-            'system'
-          );
-          
-          // 格式化消息数据
-          const formattedMessage = {
-            id: leaveMessage.id,
-            userId: leaveMessage.user_id,
-            username: leaveMessage.username,
-            content: leaveMessage.content,
-            type: leaveMessage.message_type,
-            timestamp: leaveMessage.created_time
-          };
-          
-          io.emit('message', formattedMessage);
-          
           // 广播更新后的用户列表
           const updatedUsers = await db.getAllOnlineUsers();
           const formattedUsers = updatedUsers.map(user => ({

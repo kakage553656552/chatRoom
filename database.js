@@ -275,8 +275,8 @@ const db = {
 
   async getRecentMessages(limit = 5) {
     const result = await pool.query(
-      'SELECT * FROM messages ORDER BY created_time DESC LIMIT $1',
-      [limit]
+      'SELECT * FROM messages WHERE message_type = $1 ORDER BY created_time DESC LIMIT $2',
+      ['user', limit]
     );
     return result.rows.reverse(); // 反转以保持时间正序
   },
