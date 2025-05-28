@@ -3,9 +3,8 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
-const path = require('path');
-const { initDatabase, migrateDatabase, db } = require('./database');
-const { generateToken, verifyToken, generateAndSaveToken, verifyTokenWithDB, authenticateToken, authenticateSocketToken, revokeToken, revokeAllUserTokens } = require('./auth');
+const { initDatabase, db } = require('./database');
+const { generateAndSaveToken, authenticateToken, authenticateSocketToken, revokeToken, revokeAllUserTokens } = require('./auth');
 
 // 用户Socket映射，用于跟踪每个用户的Socket连接（实现单设备登录）
 const userSocketMap = new Map(); // userId -> socketId
@@ -35,8 +34,8 @@ initDatabase().catch(error => {
 // API路由
 app.get('/api/messages', authenticateToken, async (req, res) => {
   try {
-    // 获取最近的五条消息
-    const limit = req.query.limit ? parseInt(req.query.limit) : 5;
+    // 获取所有消息，不再限制数量
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const messages = await db.getRecentMessages(limit);
     
     // 格式化消息数据以匹配前端期望的格式
@@ -201,6 +200,55 @@ app.post('/api/logout-all', authenticateToken, async (req, res) => {
   }
 });
 
+// 手动清理在线用户的API（管理员功能）
+app.post('/api/cleanup-online-users', authenticateToken, async (req, res) => {
+  try {
+    // 获取所有在线用户
+    const onlineUsers = await db.getAllOnlineUsers();
+    let cleanedCount = 0;
+    
+    for (const user of onlineUsers) {
+      // 检查对应的socket是否还存在
+      const socket = io.sockets.sockets.get(user.id);
+      if (!socket || !socket.connected) {
+        // 如果socket不存在或已断开，从数据库中移除该用户
+        await db.removeOnlineUser(user.id);
+        cleanedCount++;
+        console.log(`手动清理了断开连接的用户: ${user.username} (${user.id})`);
+        
+        // 同时从用户Socket映射中移除
+        for (const [userId, socketId] of userSocketMap.entries()) {
+          if (socketId === user.id) {
+            userSocketMap.delete(userId);
+            break;
+          }
+        }
+      }
+    }
+    
+    if (cleanedCount > 0) {
+      // 广播更新后的用户列表
+      const updatedUsers = await db.getAllOnlineUsers();
+      const formattedUsers = updatedUsers.map(user => ({
+        id: user.id,
+        username: user.username,
+        userId: user.user_id,
+        joinedAt: user.created_time
+      }));
+      io.emit('users_list', formattedUsers);
+    }
+    
+    res.json({
+      success: true,
+      message: `清理了 ${cleanedCount} 个断开连接的用户记录`,
+      cleanedCount: cleanedCount
+    });
+  } catch (error) {
+    console.error('手动清理在线用户失败:', error);
+    res.status(500).json({ success: false, message: '清理失败，请稍后再试' });
+  }
+});
+
 // Socket.io连接处理
 io.on('connection', (socket) => {
   console.log('用户已连接:', socket.id, socket.isAuthenticated ? '(已认证)' : '(匿名)');
@@ -327,9 +375,9 @@ io.on('connection', (socket) => {
   });
   
   // 用户断开连接
-  socket.on('disconnect', async () => {
+  socket.on('disconnect', async (reason) => {
     try {
-      console.log('用户断开连接:', socket.id);
+      console.log(`用户断开连接: ${socket.id}, 原因: ${reason}`);
       
       // 如果是认证用户，从Socket映射中移除
       if (socket.isAuthenticated && socket.user) {
@@ -349,6 +397,7 @@ io.on('connection', (socket) => {
         const user = await db.removeOnlineUser(socket.id);
         
         if (user) {
+          console.log(`从在线用户列表中移除用户: ${user.username} (${user.user_id})`);
           // 广播更新后的用户列表
           const updatedUsers = await db.getAllOnlineUsers();
           const formattedUsers = updatedUsers.map(user => ({
@@ -358,10 +407,19 @@ io.on('connection', (socket) => {
             joinedAt: user.created_time
           }));
           io.emit('users_list', formattedUsers);
+        } else {
+          console.log(`未找到要移除的在线用户: ${socket.id}`);
         }
       }
     } catch (error) {
       console.error('处理用户断开连接失败:', error);
+      // 即使出错也要尝试清理数据
+      try {
+        await db.removeOnlineUser(socket.id);
+        console.log(`强制清理了socket: ${socket.id}`);
+      } catch (cleanupError) {
+        console.error('强制清理失败:', cleanupError);
+      }
     }
   });
 });
@@ -381,7 +439,51 @@ setInterval(async () => {
   }
 }, 60 * 60 * 1000); // 1小时
 
+// 定时清理可能残留的在线用户记录（每5分钟执行一次）
+setInterval(async () => {
+  try {
+    // 获取所有在线用户
+    const onlineUsers = await db.getAllOnlineUsers();
+    let cleanedCount = 0;
+    
+    for (const user of onlineUsers) {
+      // 检查对应的socket是否还存在
+      const socket = io.sockets.sockets.get(user.id);
+      if (!socket || !socket.connected) {
+        // 如果socket不存在或已断开，从数据库中移除该用户
+        await db.removeOnlineUser(user.id);
+        cleanedCount++;
+        console.log(`清理了断开连接的用户: ${user.username} (${user.id})`);
+        
+        // 同时从用户Socket映射中移除
+        for (const [userId, socketId] of userSocketMap.entries()) {
+          if (socketId === user.id) {
+            userSocketMap.delete(userId);
+            break;
+          }
+        }
+      }
+    }
+    
+    if (cleanedCount > 0) {
+      console.log(`清理了 ${cleanedCount} 个残留的在线用户记录`);
+      // 广播更新后的用户列表
+      const updatedUsers = await db.getAllOnlineUsers();
+      const formattedUsers = updatedUsers.map(user => ({
+        id: user.id,
+        username: user.username,
+        userId: user.user_id,
+        joinedAt: user.created_time
+      }));
+      io.emit('users_list', formattedUsers);
+    }
+  } catch (error) {
+    console.error('清理在线用户失败:', error);
+  }
+}, 5 * 60 * 1000); // 5分钟
+
 server.listen(PORT, () => {
   console.log(`服务器运行在端口 ${PORT}`);
   console.log('Token清理任务已启动，每小时执行一次');
+  console.log('在线用户清理任务已启动，每5分钟执行一次');
 }); 

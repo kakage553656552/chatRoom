@@ -107,7 +107,7 @@
         <div class="messages-container">
           <div class="messages-list" ref="messagesList">
             <div class="history-notice" v-if="messages.length > 0">
-              <span>仅显示最近5条消息历史</span>
+              <span>显示所有历史消息</span>
             </div>
             <div 
               v-for="message in messages" 
@@ -255,7 +255,7 @@ export default {
         headers['Authorization'] = `Bearer ${this.token}`;
       }
       
-      fetch(`${this.serverUrl}/api/messages?limit=5`, { headers })
+      fetch(`${this.serverUrl}/api/messages`, { headers })
         .then(response => {
           if (response.status === 401 || response.status === 403) {
             // Token无效，处理token过期但不抛出错误

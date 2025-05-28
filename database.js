@@ -273,11 +273,16 @@ const db = {
     return result.rows[0];
   },
 
-  async getRecentMessages(limit = 5) {
-    const result = await pool.query(
-      'SELECT * FROM messages WHERE message_type = $1 ORDER BY created_time DESC LIMIT $2',
-      ['user', limit]
-    );
+  async getRecentMessages(limit = null) {
+    let query = 'SELECT * FROM messages WHERE message_type = $1 ORDER BY created_time DESC';
+    let params = ['user'];
+    
+    if (limit !== null) {
+      query += ' LIMIT $2';
+      params.push(limit);
+    }
+    
+    const result = await pool.query(query, params);
     return result.rows.reverse(); // 反转以保持时间正序
   },
 
